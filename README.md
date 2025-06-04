@@ -1,0 +1,190 @@
+**AI-Powered Intrusion Detection and Response System (IDS/IPS) project:**
+
+---
+
+```markdown
+# 🛡️ AI-Powered Intrusion Detection and Response System (IDS/IPS)
+
+An intelligent IDS/IPS solution that captures and analyzes network traffic using machine learning to detect anomalies and automatically respond to threats (block IPs, send alerts via Slack). Built with Python and powered by packet capture tools like Wireshark/tshark.
+
+---
+
+## 📌 Features
+
+- ✅ Capture & parse `.pcap` traffic files
+- ✅ Extract network traffic features (IP, protocol, port, size)
+- ✅ Train ML anomaly detection models (Isolation Forest)
+- ✅ Detect and flag suspicious activity
+- ✅ Automatically block suspicious IPs via `iptables`
+- ✅ Send real-time alerts via Slack
+- ✅ Schedule regular scans via cron
+
+---
+
+## 🧠 Skills Demonstrated
+
+- Network traffic analysis & packet inspection  
+- ML-based anomaly detection  
+- Incident response & automation  
+- Slack API integration  
+- Linux firewall automation (`iptables`)  
+- Python scripting  
+
+---
+
+## 🛠️ Tech Stack
+
+- Python 3.8+
+- pandas, scikit-learn, joblib
+- tshark (via Wireshark CLI)
+- iptables (Linux firewall)
+- Slack SDK (`slack_sdk`)
+- cron (for job scheduling)
+
+---
+
+## 📂 Project Structure
+
+```
+
+ai-ids-ips/
+│
+├── scripts/
+│   ├── parse\_pcap.py             # Parses .pcap files using tshark
+│   ├── feature\_engineering.py    # Extracts features from parsed data
+│   ├── train\_model.py            # Trains Isolation Forest and flags anomalies
+│   ├── response\_automation.py    # Blocks IPs and sends Slack alerts
+│
+├── logs/
+│   ├── parsed\_traffic.csv
+│   ├── features.csv
+│   └── predictions.csv
+│
+├── models/
+│   └── isolation\_forest.pkl      # Saved ML model
+│
+├── run\_pipeline.py               # Master script to run full pipeline
+└── README.md
+
+````
+
+---
+
+## 🚀 Getting Started
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/yourusername/ai-ids-ips.git
+cd ai-ids-ips
+````
+
+### 2. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Install `tshark`
+
+```bash
+# On Ubuntu/Debian
+sudo apt install tshark
+```
+
+Ensure `tshark` is in your system PATH.
+
+### 4. Export Slack Bot Token
+
+Create a bot in [Slack API](https://api.slack.com/apps) and export your token:
+
+```bash
+export SLACK_BOT_TOKEN='xoxb-your-slack-bot-token'
+```
+
+---
+
+## 🧪 Usage
+
+### Parse traffic
+
+```bash
+python scripts/parse_pcap.py
+```
+
+### Extract features
+
+```bash
+python scripts/feature_engineering.py
+```
+
+### Train model and detect anomalies
+
+```bash
+python scripts/train_model.py
+```
+
+### Block IPs and send Slack alerts
+
+```bash
+sudo python scripts/response_automation.py
+```
+
+### Or run everything together
+
+```bash
+sudo python run_pipeline.py
+```
+
+---
+
+## ⏰ Automate with Cron (Linux)
+
+```bash
+crontab -e
+```
+
+Add this line to run every hour:
+
+```bash
+0 * * * * /bin/bash -c 'source /path/to/venv/bin/activate && cd /path/to/ai-ids-ips && sudo python run_pipeline.py >> logs/pipeline.log 2>&1'
+```
+
+---
+
+## 🔒 Notes
+
+* `iptables` rules are permanent only for session. To persist, use `iptables-save`.
+* Use `fail2ban` integration for more flexible response rules.
+* Consider live traffic capture with `Zeek` or `tcpdump` for production.
+
+---
+
+## 📬 Future Improvements
+
+* Email alert support (SMTP)
+* Web dashboard for alert visualization
+* Live traffic support (via Zeek)
+* More robust ML model evaluation
+* Blacklist IP persistence
+
+---
+
+## 📄 License
+
+MIT License
+
+---
+
+## 🤝 Contributing
+
+Pull requests welcome! For major changes, please open an issue first.
+
+---
+
+## 📧 Contact
+
+**Okwubali Prince** – \[[lovetechcyb@gmail.com](mailto:lovetechcyb@gmail.com)]
+GitHub: (https://github.com/lovetechcyber)
+
+
