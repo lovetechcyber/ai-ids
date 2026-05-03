@@ -1,6 +1,6 @@
 from flask import Flask, render_template, redirect, url_for
 from flask_login import LoginManager, login_required
-from dashboardmodels import db, TrafficLog, Alert, BlockedIP
+from dashboard.models import db, TrafficLog, Alert, BlockedIP
 from auth import auth_bp, login_manager
 import os
 
