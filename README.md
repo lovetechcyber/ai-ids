@@ -75,7 +75,7 @@ ai-ids-ips/
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/yourusername/ai-ids-ips.git
+git clone https://github.com/lovetechcyber/ai-ids-ips.git
 cd ai-ids-ips
 ````
 

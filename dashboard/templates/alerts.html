@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Filtered Alerts</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<h1>🚨 Filtered Alerts</h1>
+<a href="/dashboard">⬅ Back to Dashboard</a>
+
+<div class="card">
+    <ul>
+        {% for alert in alerts %}
+            <li class="
+                {% if alert.severity == 'Critical' %}critical
+                {% elif alert.severity == 'High' %}high
+                {% elif alert.severity == 'Medium' %}medium
+                {% else %}low
+                {% endif %}
+            ">
+                <strong>{{ alert.src_ip }}</strong> — {{ alert.message }}
+                <br>
+                Severity: {{ alert.severity }} | Score: {{ alert.score }}
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IDS Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-950 text-white">
+
+<!-- HEADER -->
+<div class="flex justify-between items-center p-6 bg-gray-900">
+    <h1 class="text-2xl font-bold">🛡️ AI IDS/IPS Dashboard</h1>
+    <a href="{{ url_for('auth.logout') }}" class="text-red-400">Logout</a>
+</div>
+
+<!-- STATS CARDS -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
+
+    <div class="bg-gray-900 p-6 rounded-xl shadow-lg">
+        <h2 class="text-gray-400">Total Traffic</h2>
+        <p class="text-3xl font-bold">{{ total_traffic }}</p>
+    </div>
+
+    <div class="bg-gray-900 p-6 rounded-xl shadow-lg">
+        <h2 class="text-gray-400">Threats Detected</h2>
+        <p class="text-3xl font-bold text-red-400">{{ anomaly_count }}</p>
+    </div>
+
+    <div class="bg-gray-900 p-6 rounded-xl shadow-lg">
+        <h2 class="text-gray-400">Blocked IPs</h2>
+        <p class="text-3xl font-bold text-orange-400">{{ blocked_ips|length }}</p>
+    </div>
+
+</div>
+
+<!-- ALERTS SECTION -->
+<div class="p-6">
+
+    <h2 class="text-xl font-semibold mb-4">🚨 Alerts</h2>
+
+    <div class="space-y-3">
+        {% for alert in alerts %}
+        <div class="p-4 rounded-lg bg-gray-900 border-l-4
+            {% if alert.severity == 'Critical' %} border-red-500
+            {% elif alert.severity == 'High' %} border-orange-500
+            {% elif alert.severity == 'Medium' %} border-yellow-500
+            {% else %} border-green-500
+            {% endif %}">
+
+            <div class="flex justify-between">
+                <span class="font-semibold">{{ alert.src_ip }}</span>
+                <span class="text-sm text-gray-400">{{ alert.score }} pts</span>
+            </div>
+
+            <p class="text-sm text-gray-300">{{ alert.message }}</p>
+
+            <span class="text-xs text-gray-400">
+                Severity:
+                <span class="font-bold">{{ alert.severity }}</span>
+            </span>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<!-- TOP IPs -->
+<div class="p-6">
+
+    <h2 class="text-xl font-semibold mb-4">🌐 Top IP Activity</h2>
+
+    <div class="bg-gray-900 p-4 rounded-lg">
+        {% for ip, count in top_ips.items() %}
+        <div class="flex justify-between border-b border-gray-800 py-2">
+            <span>{{ ip }}</span>
+            <span class="text-gray-400">{{ count }} hits</span>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+</body>
+</html>
