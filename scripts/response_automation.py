@@ -1,54 +1,93 @@
-# scripts/response_automation.py
-
-import pandas as pd
-import subprocess
-from slack_sdk import WebClient
+import sys
 import os
 
-SLACK_TOKEN = os.getenv("SLACK_BOT_TOKEN")  # Set this env var before running
-SLACK_CHANNEL = "#alerts"  # Change to your Slack channel
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(BASE_DIR)
 
+import pandas as pd
+from flask import Flask
+import dashboard.models
+
+# =========================
+# APP SETUP
+# =========================
+app = Flask(__name__)
+
+
+app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "dev-key-change-me")
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'ids.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+dashboard.models.db.init_app(app)
+
+# =========================
+# HELPERS
+# =========================
 def block_ip(ip):
-    try:
-        subprocess.run(
-            ["sudo", "iptables", "-A", "INPUT", "-s", ip, "-j", "DROP"],
-            check=True
-        )
-        print(f"Blocked IP: {ip}")
-    except subprocess.CalledProcessError as e:
-        print(f"Failed to block IP {ip}: {e}")
+    print(f"[SIMULATION] Blocking IP: {ip}")
+    blocked = dashboard.models.BlockedIP(ip_address=ip)
+    dashboard.models.db.session.add(blocked)
 
-def send_slack_alert(ip):
-    if not SLACK_TOKEN:
-        print("No Slack token found in environment, skipping alert.")
+def save_alert(ip, severity, score, message):
+    alert = dashboard.models.Alert(
+        src_ip=ip,
+        severity=severity,
+        score=score,
+        message=message
+    )
+    dashboard.models.db.session.add(alert)
+
+# =========================
+# MAIN PIPELINE
+# =========================
+def main():
+
+    csv_path = os.path.join(BASE_DIR, "logs", "predictions.csv")
+
+    if not os.path.exists(csv_path):
+        print(f"❌ File not found: {csv_path}")
         return
-    client = WebClient(token=SLACK_TOKEN)
-    try:
-        response = client.chat_postMessage(
-            channel=SLACK_CHANNEL,
-            text=f"Alert: Intrusion detected and IP blocked - {ip}"
-        )
-        print(f"Slack alert sent for IP {ip}")
-    except Exception as e:
-        print(f"Slack alert failed: {e}")
 
-def automate_response(predictions_csv, original_csv):
-    preds = pd.read_csv(predictions_csv)
-    original = pd.read_csv(original_csv)
+    df = pd.read_csv(csv_path)
 
-    # Join original with predictions by index
-    df = original.copy()
-    df['Anomaly'] = preds['Anomaly']
+    with app.app_context():
+        try:
+            for _, row in df.iterrows():
 
-    # Filter anomalous rows
-    anomalies = df[df['Anomaly'] == -1]
+                if row.get("anomaly", 0) == 1:
 
-    # Extract unique suspicious IPs (source IPs flagged)
-    suspicious_ips = anomalies['Source'].unique()
+                    ip = row.get("src_ip", "unknown")
+                    score = int(row.get("score", 50))
 
-    for ip in suspicious_ips:
-        block_ip(ip)
-        send_slack_alert(ip)
+                    # =========================
+                    # Severity Logic
+                    # =========================
+                    if score >= 80:
+                        severity = "Critical"
+                    elif score >= 60:
+                        severity = "High"
+                    elif score >= 30:
+                        severity = "Medium"
+                    else:
+                        severity = "Low"
 
+                    message = f"Suspicious activity detected from {ip}"
+
+                    save_alert(ip, severity, score, message)
+
+                    if severity in ["High", "Critical"]:
+                        block_ip(ip)
+
+            dashboard.models.db.session.commit()
+            print("✅ Alerts saved to dashboard (DB)")
+
+        except Exception as e:
+            dashboard.models.db.session.rollback()
+            print(f"❌ Error occurred: {e}")
+
+# =========================
+# ENTRY POINT
+# =========================
 if __name__ == "__main__":
-    automate_response("logs/predictions.csv", "logs/parsed_traffic.csv")
+    main()
