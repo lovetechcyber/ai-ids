@@ -5,7 +5,7 @@ import requests
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 API_URL = "https://ai-ids-myxb.onrender.com/api/ingest"
-API_KEY = os.environ.get("API_KEY", "dev-key-change-me")
+API_KEY = "ids123"
 
 
 def main():
