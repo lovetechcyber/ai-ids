@@ -1,84 +1,95 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IDS Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-</head>
-
-<body class="bg-gray-950 text-white">
-
-<!-- HEADER -->
-<div class="flex justify-between items-center p-6 bg-gray-900">
+</head><body class="bg-gray-950 text-white"><!-- HEADER --><div class="flex justify-between items-center p-6 bg-gray-900 border-b border-gray-800">
     <h1 class="text-2xl font-bold">🛡️ AI IDS/IPS Dashboard</h1>
-    <a href="{{ url_for('auth.logout') }}" class="text-red-400">Logout</a>
+    <a href="{{ url_for('auth.logout') }}" 
+       class="text-red-400 hover:text-red-300 text-sm font-medium">
+       Logout
+    </a>
+</div><!-- STATS CARDS --><div class="grid grid-cols-1 md:grid-cols-3 gap-6 p-6"><div class="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-800">
+    <h2 class="text-gray-400 text-sm">Total Traffic</h2>
+    <p class="text-3xl font-bold mt-2">{{ total_traffic or 0 }}</p>
 </div>
 
-<!-- STATS CARDS -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
-
-    <div class="bg-gray-900 p-6 rounded-xl shadow-lg">
-        <h2 class="text-gray-400">Total Traffic</h2>
-        <p class="text-3xl font-bold">{{ total_traffic }}</p>
-    </div>
-
-    <div class="bg-gray-900 p-6 rounded-xl shadow-lg">
-        <h2 class="text-gray-400">Threats Detected</h2>
-        <p class="text-3xl font-bold text-red-400">{{ anomaly_count }}</p>
-    </div>
-
-    <div class="bg-gray-900 p-6 rounded-xl shadow-lg">
-        <h2 class="text-gray-400">Blocked IPs</h2>
-        <p class="text-3xl font-bold text-orange-400">{{ blocked_ips|length }}</p>
-    </div>
-
+<div class="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-800">
+    <h2 class="text-gray-400 text-sm">Threats Detected</h2>
+    <p class="text-3xl font-bold text-red-400 mt-2">
+        {{ anomaly_count or 0 }}
+    </p>
 </div>
 
-<!-- ALERTS SECTION -->
-<div class="p-6">
+<div class="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-800">
+    <h2 class="text-gray-400 text-sm">Blocked IPs</h2>
+    <p class="text-3xl font-bold text-orange-400 mt-2">
+        {{ blocked_ips|length if blocked_ips else 0 }}
+    </p>
+</div>
 
-    <h2 class="text-xl font-semibold mb-4">🚨 Alerts</h2>
+</div><!-- ALERTS SECTION --><div class="p-6"><h2 class="text-xl font-semibold mb-4">🚨 Alerts</h2>
 
-    <div class="space-y-3">
-        {% for alert in alerts %}
-        <div class="p-4 rounded-lg bg-gray-900 border-l-4
-            {% if alert.severity == 'Critical' %} border-red-500
-            {% elif alert.severity == 'High' %} border-orange-500
-            {% elif alert.severity == 'Medium' %} border-yellow-500
-            {% else %} border-green-500
-            {% endif %}">
+{% if alerts and alerts|length > 0 %}
+<div class="space-y-3">
+    {% for alert in alerts %}
+    <div class="p-4 rounded-lg bg-gray-900 border border-gray-800 border-l-4
+        {% if alert.severity == 'Critical' %} border-red-500
+        {% elif alert.severity == 'High' %} border-orange-500
+        {% elif alert.severity == 'Medium' %} border-yellow-500
+        {% else %} border-green-500
+        {% endif %} hover:bg-gray-800 transition">
 
-            <div class="flex justify-between">
-                <span class="font-semibold">{{ alert.src_ip }}</span>
-                <span class="text-sm text-gray-400">{{ alert.score }} pts</span>
-            </div>
+        <div class="flex justify-between items-center">
+            <span class="font-semibold">{{ alert.src_ip or 'Unknown' }}</span>
 
-            <p class="text-sm text-gray-300">{{ alert.message }}</p>
-
-            <span class="text-xs text-gray-400">
-                Severity:
-                <span class="font-bold">{{ alert.severity }}</span>
+            <span class="text-xs px-2 py-1 rounded
+                {% if alert.severity == 'Critical' %} bg-red-500/20 text-red-400
+                {% elif alert.severity == 'High' %} bg-orange-500/20 text-orange-400
+                {% elif alert.severity == 'Medium' %} bg-yellow-500/20 text-yellow-400
+                {% else %} bg-green-500/20 text-green-400
+                {% endif %}">
+                {{ alert.severity }}
             </span>
         </div>
-        {% endfor %}
-    </div>
 
+        <p class="text-sm text-gray-300 mt-2">
+            {{ alert.message or 'No message provided' }}
+        </p>
+
+        <div class="flex justify-between mt-2 text-xs text-gray-400">
+            <span>Score: {{ alert.score or 0 }}</span>
+        </div>
+
+    </div>
+    {% endfor %}
 </div>
 
-<!-- TOP IPs -->
-<div class="p-6">
+{% else %}
+<div class="bg-gray-900 p-6 rounded-lg text-center text-gray-500 border border-gray-800">
+    No alerts yet. System is monitoring traffic.
+</div>
+{% endif %}
 
-    <h2 class="text-xl font-semibold mb-4">🌐 Top IP Activity</h2>
+</div><!-- TOP IPs --><div class="p-6"><h2 class="text-xl font-semibold mb-4">🌐 Top IP Activity</h2>
 
-    <div class="bg-gray-900 p-4 rounded-lg">
+<div class="bg-gray-900 p-4 rounded-lg border border-gray-800">
+
+    {% if top_ips %}
         {% for ip, count in top_ips.items() %}
         <div class="flex justify-between border-b border-gray-800 py-2">
             <span>{{ ip }}</span>
             <span class="text-gray-400">{{ count }} hits</span>
         </div>
         {% endfor %}
-    </div>
+    {% else %}
+        <p class="text-gray-500 text-sm text-center">
+            No traffic data available
+        </p>
+    {% endif %}
 
 </div>
 
-</body>
+</div></body>
 </html>
