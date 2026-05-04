@@ -145,6 +145,55 @@ def receive_alerts():
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
+
+@app.route("/api/ingest", methods=["POST"])
+def ingest_data():
+    try:
+        if request.headers.get("X-API-KEY") != API_KEY:
+            return {"error": "unauthorized"}, 401
+
+        data = request.get_json()
+
+        logs = data.get("logs", [])
+        alerts = data.get("alerts", [])
+
+        # =========================
+        # SAVE TRAFFIC LOGS
+        # =========================
+        for log in logs:
+            traffic = TrafficLog(
+                src_ip=log.get("src_ip"),
+                dest_ip=log.get("dest_ip"),
+                protocol=log.get("protocol"),
+                packet_size=log.get("packet_size"),
+                anomaly=log.get("anomaly", 0)
+            )
+            db.session.add(traffic)
+
+        # =========================
+        # SAVE ALERTS
+        # =========================
+        for a in alerts:
+            alert = Alert(
+                src_ip=a.get("src_ip"),
+                severity=a.get("severity"),
+                score=a.get("score"),
+                message=a.get("message")
+            )
+            db.session.add(alert)
+
+            # Auto block
+            if a.get("severity") in ["High", "Critical"]:
+                db.session.add(BlockedIP(ip_address=a.get("src_ip")))
+
+        db.session.commit()
+
+        return {"status": "ingested"}, 201
+
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}, 500
+    
 # =========================
 # HEALTH CHECK
 # =========================
