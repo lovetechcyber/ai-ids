@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, UserMixin, login_user, logout_user
 from flask_bcrypt import Bcrypt
 
@@ -7,6 +7,7 @@ bcrypt = Bcrypt()
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
 
+# Demo user (hashed password)
 users = {
     "admin": bcrypt.generate_password_hash("admin123").decode("utf-8")
 }
@@ -28,6 +29,8 @@ def login():
         if username in users and bcrypt.check_password_hash(users[username], password):
             login_user(User(username))
             return redirect(url_for("dashboard"))
+        else:
+            flash("Invalid username or password", "error")
 
     return render_template("login.html")
 
