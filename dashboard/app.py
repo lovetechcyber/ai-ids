@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for
+from flask import Flask, render_template, redirect, url_for, request, jsonify
 from flask_login import login_required
 from dashboard.models import db, TrafficLog, Alert, BlockedIP
 from dashboard.auth import auth_bp, login_manager, bcrypt
@@ -18,7 +18,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 database_url = os.environ.get("DATABASE_URL")
 
-# Fix Render postgres URL (important if you switch later)
+# Fix Render postgres URL
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 
@@ -26,6 +26,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = database_url or \
     "sqlite:///" + os.path.join(basedir, "ids.db")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# =========================
+# API SECURITY
+# =========================
+API_KEY = os.environ.get("API_KEY", "dev-api-key")
 
 # =========================
 # INIT EXTENSIONS
@@ -40,7 +45,7 @@ bcrypt.init_app(app)
 app.register_blueprint(auth_bp)
 
 # =========================
-# AUTO CREATE TABLES (CRITICAL FIX)
+# CREATE TABLES
 # =========================
 with app.app_context():
     db.create_all()
@@ -68,7 +73,7 @@ def home():
 def dashboard():
     try:
         logs = TrafficLog.query.all()
-        alerts = Alert.query.all()
+        alerts = Alert.query.order_by(Alert.id.desc()).all()
         blocked_ips = BlockedIP.query.all()
 
         total_traffic = len(logs)
@@ -89,8 +94,8 @@ def dashboard():
         )
 
     except Exception as e:
-        # Prevent full crash in production
         return f"Dashboard error: {str(e)}", 500
+
 
 @app.route("/alerts/<level>")
 @login_required
@@ -99,14 +104,56 @@ def filter_alerts(level):
     return render_template("alerts.html", alerts=alerts)
 
 # =========================
-# HEALTH CHECK (FOR RENDER)
+# 🔥 PIPELINE API ENDPOINT
+# =========================
+@app.route("/api/alerts", methods=["POST"])
+def receive_alerts():
+    try:
+        # 🔐 AUTH
+        if request.headers.get("X-API-KEY") != API_KEY:
+            return jsonify({"error": "unauthorized"}), 401
+
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"error": "invalid payload"}), 400
+
+        # =========================
+        # SAVE ALERT
+        # =========================
+        alert = Alert(
+            src_ip=data.get("src_ip", "unknown"),
+            severity=data.get("severity", "Low"),
+            score=int(data.get("score", 0)),
+            message=data.get("message", "No message")
+        )
+
+        db.session.add(alert)
+
+        # =========================
+        # AUTO BLOCK
+        # =========================
+        if alert.severity in ["High", "Critical"]:
+            blocked = BlockedIP(ip_address=alert.src_ip)
+            db.session.add(blocked)
+
+        db.session.commit()
+
+        return jsonify({"status": "saved"}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+# =========================
+# HEALTH CHECK
 # =========================
 @app.route("/health")
 def health():
     return {"status": "ok"}, 200
 
 # =========================
-# ENTRY POINT (LOCAL ONLY)
+# ENTRY POINT (LOCAL)
 # =========================
 if __name__ == "__main__":
     app.run(
